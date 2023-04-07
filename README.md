@@ -1,2 +1,2 @@
 # PowerShell
-PowerShell repo with all my scripts to be share with whom finds them useful
+PowerShell repo with all my scripts to be shared with whom finds them useful.
