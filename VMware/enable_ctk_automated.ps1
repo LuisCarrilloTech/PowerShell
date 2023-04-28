@@ -1,9 +1,38 @@
-### # Add vCenter connections here:
+<#.SYNOPSIS
+Below is the automated version of enable_ctk_manual.ps1 located in the same folder. This script allows you to automate the process by creating a scheduled task to run at whatever interval you like. You would export the username and password and retrieve it securely. This user would typically have power user VM access on vCenter.
+
+This script enables Changed Block Tracking (CBT) on virtual machines in vCenter. Essentially, it allows for updating the Change Block Tracking on a VM through CLI. Normally, changing advanced settings on a powered ON VM requires shutting it down before modifying the settings. However, this script allows for the VM to remain powered ON while modifying the settings.
+
+.DESCRIPTION
+This script connects to vCenter and checks for the CBT advanced setting. If the setting is missing, the script creates a snapshot, enables CBT, and deletes the snapshot.
+
+
+.PARAMETER vCenter
+An array of vCenter server that the script will connect to.
+
+
+.PARAMETER Credential
+A PsCredential object containing the vCenter administrator credentials.
+
+
+.PARAMETER ExcludeNames
+An array of virtual machine names to exclude from being checked for CBT.
+
+.NOTES
+Author: Luis Carrillo
+Date: 02/14/2023
+Version: 1.0
+#>
+
+# Add vCenter connections here:
 $vCenters = @(
     'vcenter-1.domain.com',
     'vcenter-2.domain.com',
     'vcenter-3.domain.com'
 )
+
+# Run this once to export password. Comment it out after the first time:
+(Get-Credential).password | ConvertFrom-SecureString | Set-Content "C:\path\creds.txt"
 
 # Replace with your credentials file path:
 $password = Get-Content -Path "C:\path\to\creds.txt" | ConvertTo-SecureString
@@ -53,7 +82,7 @@ $cb2 = $cb | Where-Object {
 
 # Check for missing CBT advanced setting:
 $ctkenabled = foreach ($sys in $cb2.Name) {
-    \n if (!(Get-VM $sys | Get-AdvancedSetting -Name *ctk*).Name) {
+    if (!(Get-VM $sys | Get-AdvancedSetting -Name *ctk*).Name) {
         Write-Output $sys
     } else {
 
