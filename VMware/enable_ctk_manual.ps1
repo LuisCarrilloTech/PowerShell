@@ -23,21 +23,19 @@ Version: 1.0
 #>
 
 # Checks for vmware powercli module:
-Import-Module -Name vmware.vimautomation.core
-
-if (!(Get-Module vmware.vimautomation.core)) {
-    Write-Host -ForegroundColor Yellow "PowerCLI module required to run this CMDlet."
-    Write-Host -ForegroundColor Green "
-    To install PowerCLI, open the PowerShell terminal and type:
-
-    Install-Module -Name vmware.powercli -Scope AllUsers
-    "
-
+$moduleName = "VMware.vimautomation.core"
+if (!(Get-Module -Name $moduleName -ErrorAction SilentlyContinue)) {
+    Write-Warning "The PowerCLI module is required to run this script. Installing $moduleName module now..."
+    try {
+        Install-Module -Name $moduleName -Confirm:$false -Scope AllUsers -Force
+    } catch {
+        Write-Error "Failed to install $moduleName module. Please verify that you have an active internet connection and that you have sufficient permissions to install modules."
+        exit 1
+    }
 } else {
-    continue
+    Write-Host "PowerCLI module is already installed."
+    Import-Module -Name $moduleName -Force -Verbose
 }
-
-
 
 # You can add one or more servers to the list. Just make sure the last server has no comma at the end of the line
 [string[]]$ctkenabled = Read-Host -Prompt "Enter VM Names followed by commas if entering multiple vms"
