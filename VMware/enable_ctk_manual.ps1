@@ -25,24 +25,32 @@ Version: 1.0
 # Checks for vmware powercli module:
 if (!(Get-Module vmware.vimautomation.core)) {
     Write-Host -ForegroundColor Yellow "PowerCLI module required to run this CMDlet."
+    Write-Host -ForegroundColor Green "To install PowerCLI, open the PowerShell terminal and type: Install-Module -Name vmware.powercli -Scope AllUsers"
     break
+} else {
+    Import-Module -Name vmware.vimautomation.core
 }
 
-Import-Module -Name vmware.vimautomation.core
+
 
 # You can add one or more servers to the list. Just make sure the last server has no comma at the end of the line
-$ctkenabled = @(
-    'vm1',
-    'vm2',
-    'vm3'
-)
+[string[]]$ctkenabled = Read-Host -Prompt "Enter VM Names followed by commas if entering multiple vms"
 
-$vcenter = Read-Host -Prompt "Enter vCenter FQDN:"
-$userpname = Read-Host -Prompt "Enter Username to connect to vCenter:"
-$userpassword = Read-Host -Prompt "Enter vCenter password" -AsSecureString
+# Check and connect to vCenter:
+$vcenter = Read-Host -Prompt "Enter vCenter FQDN"
 
-Connect-VIServer -Server $vcenter -User $userpname -Password $userpassword -SaveCredentials
+if (!($global:DefaultVIServers)) {
 
+    try {
+        $username = Read-Host -Prompt "Enter Username to connect to vCenter"
+        $userpassword = Read-Host -Prompt "Enter vCenter password" -AsSecureString
+        Connect-VIServer -Server $vcenter -User $username -Password $userpassword
+
+    } catch {
+        Write-Output "The vCenter cannot be resolved. Verify $($vcenter) is online."
+        break
+    }
+}
 # Start enabling CBT setting:
 foreach ($vm in $ctkenabled) {
     try {
