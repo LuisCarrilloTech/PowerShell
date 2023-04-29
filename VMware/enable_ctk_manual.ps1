@@ -23,12 +23,18 @@ Version: 1.0
 #>
 
 # Checks for vmware powercli module:
+Import-Module -Name vmware.vimautomation.core
+
 if (!(Get-Module vmware.vimautomation.core)) {
     Write-Host -ForegroundColor Yellow "PowerCLI module required to run this CMDlet."
-    Write-Host -ForegroundColor Green "To install PowerCLI, open the PowerShell terminal and type: Install-Module -Name vmware.powercli -Scope AllUsers"
-    break
+    Write-Host -ForegroundColor Green "
+    To install PowerCLI, open the PowerShell terminal and type:
+
+    Install-Module -Name vmware.powercli -Scope AllUsers
+    "
+
 } else {
-    Import-Module -Name vmware.vimautomation.core
+    continue
 }
 
 
@@ -43,14 +49,15 @@ if (!($global:DefaultVIServers)) {
 
     try {
         $username = Read-Host -Prompt "Enter Username to connect to vCenter"
-        $userpassword = Read-Host -Prompt "Enter vCenter password" -AsSecureString
-        Connect-VIServer -Server $vcenter -User $username -Password $userpassword
+        $userpassword = Read-Host -Prompt "Enter vCenter password\" -AsSecureString
+        Connect-VIServer -Server $vcenter -User $username -Password $userpassword -ErrorAction Stop
 
     } catch {
         Write-Output "The vCenter cannot be resolved. Verify $($vcenter) is online."
         break
     }
 }
+
 # Start enabling CBT setting:
 foreach ($vm in $ctkenabled) {
     try {
