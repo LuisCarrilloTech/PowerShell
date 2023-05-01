@@ -31,26 +31,28 @@ $vCenters = @(
     'vcenter-3.domain.com'
 )
 
-# Run this once to export password. Comment it out after the first time:
+# **** Run this once to export password. Comment it out after the first time: ****
 (Get-Credential).password | ConvertFrom-SecureString | Set-Content "C:\path\creds.txt"
 
 # Replace with your credentials file path:
 $password = Get-Content -Path "C:\path\to\creds.txt" | ConvertTo-SecureString
 $credential = New-Object System.Management.Automation.PsCredential('username@domain.com', $password)
 
-if ((Get-PowerCLIConfiguration -Scope User).invalidcertificateAction -eq 'Ignore') {
-    return
+# Check if VMWare PowerCLI module is installed:
+$moduleName = "VMware.VimAutomation.Core"
+if (!(Get-Module -Name $moduleName)) {
+    try {
+        Get-Module -list | Where-Object name -Match $moduleName | Import-Module -ErrorAction Stop
+    } catch {
+        Write-Error "Error loading $($moduleName). Please make sure it is installed."
+        break
+    }
 } else {
-    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Scope currentUser -Confirm:$false
+    Write-Verbose "PowerCLI module installed. Proceeding with the script..."
 }
 
-# Checks for vmware powercli module:
-if (!(Get-Module vmware.vimautomation.core)) {
-    Write-Host -ForegroundColor Yellow "PowerCLI module required to run this CMDlet."
-    break
-}
-
-Import-Module -Name vmware.vimautomation.core
+# Gives import-module time to complete:
+sleep 10
 
 # If you have run this cmdlet before and are still connected to vcenters, function will skip trying to reconnect:
 if (!($global:DefaultVIServers)) {
