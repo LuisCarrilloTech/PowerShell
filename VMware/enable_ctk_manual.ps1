@@ -16,68 +16,90 @@ An array of virtual machine names to exclude from being checked for CBT.
 .NOTES
 Author: Luis Carrillo
 Date: 02/14/2023
-Version: 1.0
+Version: 1.1
 #>
 
-# Checks for vmware powercli module:
+# Check if VMWare PowerCLI module is installed:
 $moduleName = "VMware.VimAutomation.Core"
 if (!(Get-Module -Name $moduleName)) {
     try {
         Get-Module -list | Where-Object name -Match $moduleName | Import-Module -ErrorAction Stop
     } catch {
-        Write-Error "Error loading $($moduleName). Make sure it is installed."
+        Write-Error "Error loading $($moduleName). Please make sure it is installed."
         break
     }
 } else {
-    Write-Host "PowerCLI module installed. Continue..."
+    Write-Host "PowerCLI module installed. Proceeding with the script..."
 }
 
-# Check and connect to vCenter:
+# Prompt user to input vCenter FQDN and connect to server:
 $vcenter = Read-Host -Prompt "Enter vCenter FQDN"
 while ((Test-Connection -ComputerName $vcenter -Quiet) -eq $false) {
     Write-Host "Please enter a valid FDQN for vCenter"
     $vcenter = Read-Host -Prompt "Enter vCenter FQDN"
 }
 
-if (!($global:DefaultVIServers)) {
-
-    try {
-        $credentials = $null
-        $credentials = Get-Credential
-        Connect-VIServer -Server $vcenter -Credential $credentials -ErrorAction Stop
-    } catch {
-        Write-Error "Please verify username and password are correct"
-    }
-
+# Prompt user for credentials and connect to vCenter:
+try {
+    $credentials = Get-Credential -Message "Enter vCenter administrator credentials"
+    Connect-VIServer -Server $vcenter -Credential $credentials -ErrorAction Stop
+    Write-Host "Connected to vCenter $($vcenter)"
+} catch [VMware.Vim.VimException] {
+    Write-Error "Failed to connect to vCenter. Please verify your credentials and try again."
+} catch {
+    Write-Error "An error occurred. Please try again."
 }
 
-# You can add one or more servers to the list. Just make sure the last server has no comma at the end of the line
-[string[]]$ctkenabled = Read-Host -Prompt "Enter VM Names followed by commas if entering multiple vms"
+# Prompt user to input VM names separated by commas and enable CBT on each VM:
+$ctkenabled = Read-Host -Prompt "Enter VM Name(s) separated by commas ',' & no spaces. i.e. vm1,vm2,vm3"
+$ctkenabled = $ctkenabled.Split(',')
 
-# Start enabling CBT setting:
 foreach ($vm in $ctkenabled) {
     try {
+        # Check if VM exists and get view object:
         $vmview = Get-VM $vm -ErrorAction Stop | Get-View
         $vmConfigSpec = New-Object VMware.Vim.VirtualMachineConfigSpec
     } catch {
-        "Error with system $($vm)"
+        Write-Error "Failed to find VM $($vm). Please verify the VM name and try again."
+        continue
     }
 
-    # Create snapshot before ctk enabled and set setting:
+    # Create snapshot before enabling CBT and set setting:
     try {
         New-Snapshot $vm -Name "Prior to enabling CBT" -Verbose -ea Stop
         $vmConfigSpec.changeTrackingEnabled = $true
         $vmview.reconfigVM($vmConfigSpec)
     } catch {
-        "Error with system $($vm)"
+        Write-Error "Failed to enable CBT on VM $($vm). Please check if the VM is powered on and try again."
+        continue
     }
 
-    Start-Sleep 15
+    # Wait for task to complete:
+    Start-Sleep 20
 
     # Verify CBT is enabled, if so, delete pre cbt setting snapshot:
-    if ((Get-VM $vm | Get-AdvancedSetting -Name ctkEnabled).value -eq $true) {
-        Get-VM $vm | Get-Snapshot -Name "*enabling CBT" | Remove-Snapshot -Verbose -Confirm:$false
+    $cbtEnabled = $vmview.config.changeTrackingEnabled
+    if ($cbtEnabled) {
+        Write-Host "CBT enabled on VM $($vm)."
+        # Remove snapshot:
+        try {
+            Get-Snapshot -VM $vm -Name "Prior to enabling CBT" | Remove-Snapshot -Confirm:$false -ErrorAction Stop
+            Write-Host "Snapshot removed."
+        } catch {
+            Write-Error "Failed to remove snapshot. Please check if the snapshot exists and try again."
+            continue
+        }
     } else {
-        Write-Output "CBT NOT Enabled on VM: $($vm)"
+        Write-Error "Failed to enable CBT on VM $($vm). Please check if the VM is powered on and try again."
+        continue
     }
+
+}
+
+# Disconnect from vCenter:
+try {
+    Disconnect-VIServer -Server $vcenter -Confirm:$false -ErrorAction Stop
+    Write-Host "Disconnected from vCenter $($vcenter)."
+} catch {
+    Write-Error "Failed to disconnect from vCenter $($vcenter)."
 }
