@@ -84,7 +84,7 @@ foreach ($vm in $ctkenabled) {
     Start-Sleep 15
 
     # Verify CBT is enabled, if so, delete pre cbt setting snapshot:
-    if ((get-vm $vm | Get-AdvancedSetting -Name $ctkenabled).value) {
+    if ((Get-VM $vm | Get-AdvancedSetting -Name $ctkenabled).value) {
         Write-Host "CBT enabled on VM $($vm)."
         # Remove snapshot:
         try {
