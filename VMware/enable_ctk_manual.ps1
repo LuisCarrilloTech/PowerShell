@@ -33,21 +33,24 @@ if (!(Get-Module -Name $moduleName)) {
 }
 
 # Prompt user to input vCenter FQDN and connect to server:
-$vcenter = Read-Host -Prompt "Enter vCenter FQDN"
-while ((Test-Connection -ComputerName $vcenter -Quiet) -eq $false) {
-    Write-Host "Please enter a valid FDQN for vCenter"
-    $vcenter = Read-Host -Prompt "Enter vCenter FQDN"
-}
+if (!($global:DefaultVIServers)) {
 
-# Prompt user for credentials and connect to vCenter:
-try {
-    $credentials = Get-Credential -Message "Enter vCenter administrator credentials"
-    Connect-VIServer -Server $vcenter -Credential $credentials -ErrorAction Stop
-    Write-Host "Connected to vCenter $($vcenter)"
-} catch [VMware.Vim.VimException] {
-    Write-Error "Failed to connect to vCenter. Please verify your credentials and try again."
-} catch {
-    Write-Error "An error occurred. Please try again."
+    $vcenter = Read-Host -Prompt "Enter vCenter FQDN"
+    while ((Test-Connection -ComputerName $vcenter -Quiet) -eq $false) {
+        Write-Host "Please enter a valid FDQN for vCenter"
+        $vcenter = Read-Host -Prompt "Enter vCenter FQDN"
+    }
+
+    # Prompt user for credentials and connect to vCenter:
+    try {
+        $credentials = Get-Credential -Message "Enter vCenter administrator credentials"
+        Connect-VIServer -Server $vcenter -Credential $credentials -ErrorAction Stop
+        Write-Host "Connected to vCenter $($vcenter)"
+    } catch [VMware.Vim.VimException] {
+        Write-Error "Failed to connect to vCenter. Please verify your credentials and try again."
+    } catch {
+        Write-Error "An error occurred. Please try again."
+    }
 }
 
 # Prompt user to input VM names separated by commas and enable CBT on each VM:
@@ -67,19 +70,21 @@ foreach ($vm in $ctkenabled) {
     # Create snapshot before enabling CBT and set setting:
     try {
         New-Snapshot $vm -Name "Prior to enabling CBT" -Verbose -ea Stop
-        $vmConfigSpec.changeTrackingEnabled = $true
-        $vmview.reconfigVM($vmConfigSpec)
+
     } catch {
-        Write-Error "Failed to enable CBT on VM $($vm). Please check if the VM is powered on and try again."
+        Write-Error "Failed to create snapshot for $($vm). Please verify try again."
         continue
     }
 
+    # Enable CBT:
+    $vmConfigSpec.changeTrackingEnabled = $true
+    $vmview.reconfigVM($vmConfigSpec)
+
     # Wait for task to complete:
-    Start-Sleep 20
+    Start-Sleep 15
 
     # Verify CBT is enabled, if so, delete pre cbt setting snapshot:
-    $cbtEnabled = $vmview.config.changeTrackingEnabled
-    if ($cbtEnabled) {
+    if ((get-vm $vm | Get-AdvancedSetting -Name $ctkenabled).value) {
         Write-Host "CBT enabled on VM $($vm)."
         # Remove snapshot:
         try {
@@ -89,11 +94,7 @@ foreach ($vm in $ctkenabled) {
             Write-Error "Failed to remove snapshot. Please check if the snapshot exists and try again."
             continue
         }
-    } else {
-        Write-Error "Failed to enable CBT on VM $($vm). Please check if the VM is powered on and try again."
-        continue
     }
-
 }
 
 # Disconnect from vCenter:
