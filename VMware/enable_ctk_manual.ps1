@@ -4,14 +4,11 @@ This script enables Changed Block Tracking (CBT) on virtual machines in vCenter.
 .DESCRIPTION
 This script connects to vCenter and checks for the CBT advanced setting. If the setting is missing, the script creates a snapshot, enables CBT, and deletes the snapshot.
 
-
 .PARAMETER vCenter
 An array of vCenter server that the script will connect to.
 
-
 .PARAMETER Credential
 A PsCredential object containing the vCenter administrator credentials.
-
 
 .PARAMETER ExcludeNames
 An array of virtual machine names to exclude from being checked for CBT.
@@ -23,38 +20,44 @@ Version: 1.0
 #>
 
 # Checks for vmware powercli module:
-$moduleName = "VMware.vimautomation.core"
-if (!(Get-Module -Name $moduleName -ErrorAction SilentlyContinue)) {
-    Write-Warning "The PowerCLI module is required to run this script. Installing $moduleName module now..."
+$moduleName = "VMware.VimAutomation.Core"
+if (!(Get-Module -Name $moduleName)) {
     try {
-        Install-Module -Name $moduleName -Confirm:$false -Scope AllUsers -Force
+        Get-Module -list | Where-Object name -Match $moduleName | Import-Module -ErrorAction Stop
     } catch {
-        Write-Error "Failed to install $moduleName module. Please verify that you have an active internet connection and that you have sufficient permissions to install modules."
-        exit 1
+        Write-Error "Error loading $($moduleName). Make sure it is installed."
+        break
     }
 } else {
-    Write-Host "PowerCLI module is already installed."
-    Import-Module -Name $moduleName -Force -Verbose
+    Write-Host "PowerCLI module installed. Continue..."
 }
-
-# You can add one or more servers to the list. Just make sure the last server has no comma at the end of the line
-[string[]]$ctkenabled = Read-Host -Prompt "Enter VM Names followed by commas if entering multiple vms"
 
 # Check and connect to vCenter:
 $vcenter = Read-Host -Prompt "Enter vCenter FQDN"
+while ((Test-Connection -ComputerName $vcenter -Quiet) -eq $false) {
+    Write-Host "Please enter a valid FDQN for vCenter"
+    $vcenter = Read-Host -Prompt "Enter vCenter FQDN"
+}
 
 if (!($global:DefaultVIServers)) {
 
     try {
-        $username = Read-Host -Prompt "Enter Username to connect to vCenter"
-        $userpassword = Read-Host -Prompt "Enter vCenter password\" -AsSecureString
-        Connect-VIServer -Server $vcenter -User $username -Password $userpassword -ErrorAction Stop
-
+        $credentials = $null
+        $credentials = Get-Credential
+        <#
+        $username = Read-Host -Prompt "Enter Username to connect to vCenter. Example: Domain\UserName"
+        $password = Read-Host -Prompt "Enter vCenter password" -AsSecureString
+        #>
+        #Connect-VIServer -Server $vcenter -User $username -Password $password -ErrorAction Stop
+        Connect-VIServer -Server $vcenter -Credential $credentials -ErrorAction Stop
     } catch {
-        Write-Output "The vCenter cannot be resolved. Verify $($vcenter) is online."
-        break
+        Write-Error "Please verify username and password are correct"
     }
+
 }
+
+# You can add one or more servers to the list. Just make sure the last server has no comma at the end of the line
+[string[]]$ctkenabled = Read-Host -Prompt "Enter VM Names followed by commas if entering multiple vms"
 
 # Start enabling CBT setting:
 foreach ($vm in $ctkenabled) {
@@ -67,7 +70,7 @@ foreach ($vm in $ctkenabled) {
 
     # Create snapshot before ctk enabled and set setting:
     try {
-        New-Snapshot $vm -Name "ISD-Patching - Enable CBT" -Verbose -ea Stop
+        New-Snapshot $vm -Name "Prior to enabling CBT" -Verbose -ea Stop
         $vmConfigSpec.changeTrackingEnabled = $true
         $vmview.reconfigVM($vmConfigSpec)
     } catch {
@@ -78,7 +81,7 @@ foreach ($vm in $ctkenabled) {
 
     # Verify CBT is enabled, if so, delete pre cbt setting snapshot:
     if ((Get-VM $vm | Get-AdvancedSetting -Name ctkEnabled).value -eq $true) {
-        Get-VM $vm | Get-Snapshot -Name "*Enable CBT*" | Remove-Snapshot -Verbose -Confirm:$false
+        Get-VM $vm | Get-Snapshot -Name "*enabling CBT" | Remove-Snapshot -Verbose -Confirm:$false
     } else {
         Write-Output "CBT NOT Enabled on VM: $($vm)"
     }
