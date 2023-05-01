@@ -44,11 +44,6 @@ if (!($global:DefaultVIServers)) {
     try {
         $credentials = $null
         $credentials = Get-Credential
-        <#
-        $username = Read-Host -Prompt "Enter Username to connect to vCenter. Example: Domain\UserName"
-        $password = Read-Host -Prompt "Enter vCenter password" -AsSecureString
-        #>
-        #Connect-VIServer -Server $vcenter -User $username -Password $password -ErrorAction Stop
         Connect-VIServer -Server $vcenter -Credential $credentials -ErrorAction Stop
     } catch {
         Write-Error "Please verify username and password are correct"
