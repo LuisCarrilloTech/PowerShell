@@ -60,14 +60,9 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
     # Check if VMWare PowerCLI module is installed:
     $moduleName = "VMware.VimAutomation.Core"
     if (!(Get-Module -Name $moduleName)) {
-        try {
-            Get-Module -list | Where-Object name -Match $moduleName | Import-Module -ErrorAction Stop
-        } catch {
-            Write-Error "Error loading $($moduleName). Please make sure it is installed."
-            break
-        }
+        Import-Module -Name $moduleName -Force -Verbose
     } else {
-        Write-Host "PowerCLI module installed. Proceeding with the script..."
+        Write-Output "Loading module. Please wait..."
     }
 
     # Prompt user to input vCenter FQDN and connect to server:
