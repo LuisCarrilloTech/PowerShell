@@ -1,4 +1,4 @@
-Function Update-AdvancedSetting {
+function Update-VMAdvancedSetting {
     <#.SYNOPSIS
 Enables Change Block Tracking (CBT) for the specified virtual machines in a vCenter environment.
 
@@ -37,7 +37,6 @@ Enable-CBT -VirtualMachines "vm1, vm2" -vCenter "vcenter.domain.com" -AdvancedSe
 
 This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "vm1" and "vm2" on vCenter server "vcenter.domain.com".
     #>
-
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory = $true,
@@ -63,8 +62,7 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
         try {
             Get-Module -list | Where-Object name -Match $moduleName | Import-Module -ErrorAction Stop
         } catch {
-            Write-Error "Error loading $($moduleName). Please make sure it is installed."
-            break
+            throw "Error loading $($moduleName). Please make sure it is installed."
         }
     } else {
         Write-Host "PowerCLI module installed. Proceeding with the script..."
@@ -80,15 +78,13 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
             Connect-VIServer -Server $vCenter -Credential $Credential -ErrorAction Stop
             Write-Host "Connected to vCenter $($vCenter)"
         } catch [VMware.Vim.VimException] {
-            Write-Error "Failed to connect to vCenter. Please verify your credentials and try again."
-            break
+            throw "Failed to connect to vCenter. Please verify your credentials and try again."
         } catch {
-            Write-Error "An error occurred. Please try again."
-            break
+            throw "An error occurred. Please try again."
         }
     }
-    # Enable CBT on each VM:
 
+    # Enable CBT on each VM:
     foreach ($vm in $VirtualMachines) {
         try {
             # Check if VM exists and get view object:
@@ -100,8 +96,9 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
         }
 
         # Create snapshot before enabling CBT and set setting:
+        $snapshotName = "Prior to enabling setting $($AdvancedSetting)"
         try {
-            New-Snapshot $vm -Name "Prior to enabling setting $($AdvancedSetting)" -Verbose -ea Stop
+            New-Snapshot $vm -Name $snapshotName -Verbose -ea Stop
         } catch {
             Write-Error "Failed to create snapshot for $($vm). Please verify try again."
             continue
@@ -119,21 +116,21 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
             Write-Host "Setting $($AdvancedSetting) set to $($Value) on VM $($vm)."
             # Remove snapshot:
             try {
-                Get-Snapshot -VM $vm -Name "Prior to enabling setting $($AdvancedSetting)" | Remove-Snapshot -Confirm:$false -ErrorAction Stop
+                Get-Snapshot -VM $vm -Name $snapshotName | Remove-Snapshot -Confirm:$false -ErrorAction Stop
                 Write-Host "Snapshot removed."
             } catch {
                 Write-Error "Failed to remove snapshot. Please check if the snapshot exists and try again."
                 continue
             }
         }
-
-        # Disconnect from vCenter:
-        try {
-            Disconnect-VIServer -Server $vCenter -Confirm:$false -ErrorAction Stop
-            Write-Host "Disconnected from vCenter $($vCenter)."
-        } catch {
-            Write-Error "Failed to disconnect from vCenter $($vCenter)."
-            break
-        }
     }
+    # Disconnect from vCenter:
+    try {
+        Disconnect-VIServer -Server $vCenter -Confirm:$false -ErrorAction Stop
+        Write-Host "Disconnected from vCenter $($vCenter)."
+    } catch {
+        throw "Failed to disconnect from vCenter $($vCenter)."
+    }
+
+
 }
