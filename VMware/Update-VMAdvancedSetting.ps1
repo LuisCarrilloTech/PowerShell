@@ -127,13 +127,13 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
             }
         }
 
-        # Disconnect from vCenter:
-        try {
-            Disconnect-VIServer -Server $vCenter -Confirm:$false -ErrorAction Stop
-            Write-Host "Disconnected from vCenter $($vCenter)."
-        } catch {
-            Write-Error "Failed to disconnect from vCenter $($vCenter)."
-            break
-        }
+    }
+    # Disconnect from vCenter:
+    try {
+        Disconnect-VIServer -Server $vCenter -Confirm:$false -ErrorAction Stop
+        Write-Host "Disconnected from vCenter $($vCenter)."
+    } catch {
+        Write-Error "Failed to disconnect from vCenter $($vCenter)."
+        break
     }
 }
