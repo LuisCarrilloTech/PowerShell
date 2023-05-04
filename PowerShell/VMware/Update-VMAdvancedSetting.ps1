@@ -31,12 +31,13 @@ None, it enables CBT for the specified virtual machines.
 
 .NOTES
 Author: Luis Carrillo
+Github: https://github.com/LuisCarrilloTech
 
 .EXAMPLE
 Enable-CBT -VirtualMachines "vm1, vm2" -vCenter "vcenter.domain.com" -AdvancedSetting "changeTrackingEnabled" -Value $TRUE
 
-This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "vm1" and "vm2" on vCenter server "vcenter.domain.com".
-    #>
+This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "vm1" and "vm2" on vCenter server "vcenter.domain.com".#>
+
 
     [CmdletBinding()]
     Param (
@@ -46,7 +47,7 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
 
         [Parameter(Mandatory = $true,
             ValueFromPipeline = $false)]
-        [string]$vCenter,
+        [string]$vCenters,
 
         [Parameter(Mandatory = $true,
             ValueFromPipeline = $false)]
@@ -54,14 +55,16 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
 
         [Parameter(Mandatory = $true,
             ValueFromPipeline = $false)]
-        $Value
+        $Value,
+        [switch]$Disconnect
     )
 
     # Check if VMWare PowerCLI module is installed:
     $moduleName = "VMware.VimAutomation.Core"
     if (!(Get-Module -Name $moduleName)) {
-        Import-Module -Name $moduleName -Force -Verbose
-    } else {
+        Import-Module -Name $moduleName -Force
+    }
+    else {
         Write-Output "Loading module. Please wait..."
     }
 
@@ -70,34 +73,40 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
 
         [System.Management.Automation.PSCredential]$Credential = Get-Credential
 
-        # Connect to vCenter server:
-        try {
-            Connect-VIServer -Server $vCenter -Credential $Credential -ErrorAction Stop
-            Write-Host "Connected to vCenter $($vCenter)"
-        } catch [VMware.Vim.VimException] {
-            Write-Error "Failed to connect to vCenter. Please verify your credentials and try again."
-            break
-        } catch {
-            Write-Error "An error occurred. Please try again."
-            break
+        foreach ($vcenter in $vCenters) {
+            # Connect to vCenter server:
+            try {
+                Connect-VIServer -Server $vCenter -Credential $Credential -ErrorAction Stop
+                Write-Host "Connected to vCenter $($vCenter)"
+            }
+            catch [VMware.Vim.VimException] {
+                Write-Error "Failed to connect to vCenter. Please verify your credentials and try again."
+                break
+            }
+            catch {
+                Write-Error "An error occurred. Please try again."
+                break
+            }
         }
     }
-    # Enable CBT on each VM:
 
+    # Enable CBT on each VM:
     foreach ($vm in $VirtualMachines) {
         try {
             # Check if VM exists and get view object:
             $vmview = Get-VM $vm -ErrorAction Stop | Get-View
             $vmConfigSpec = New-Object VMware.Vim.VirtualMachineConfigSpec
-        } catch {
+        }
+        catch {
             Write-Error "Failed to find VM $($vm). Please verify the VM name and try again."
             continue
         }
 
         # Create snapshot before enabling CBT and set setting:
         try {
-            New-Snapshot $vm -Name "Prior to enabling setting $($AdvancedSetting)" -Verbose -ea Stop
-        } catch {
+            New-Snapshot $vm -Name "Prior to enabling setting $($AdvancedSetting)" -ea Stop
+        }
+        catch {
             Write-Error "Failed to create snapshot for $($vm). Please verify try again."
             continue
         }
@@ -116,19 +125,21 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
             try {
                 Get-Snapshot -VM $vm -Name "Prior to enabling setting $($AdvancedSetting)" | Remove-Snapshot -Confirm:$false -ErrorAction Stop
                 Write-Host "Snapshot removed."
-            } catch {
+            }
+            catch {
                 Write-Error "Failed to remove snapshot. Please check if the snapshot exists and try again."
                 continue
             }
         }
 
     }
+
     # Disconnect from vCenter:
-    try {
-        Disconnect-VIServer -Server $vCenter -Confirm:$false -ErrorAction Stop
+    if ($Disconnect) {
+        $global:DefaultVIServers | Disconnect-VIServer -Force -Confirm:$false
         Write-Host "Disconnected from vCenter $($vCenter)."
-    } catch {
+    }
+    else {
         Write-Error "Failed to disconnect from vCenter $($vCenter)."
-        break
     }
 }
