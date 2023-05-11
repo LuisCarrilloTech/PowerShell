@@ -1,11 +1,22 @@
 Function Update-VMAdvancedSetting {
-    <#.SYNOPSIS
+<#
+.SYNOPSIS
 Enables Change Block Tracking (CBT) for the specified virtual machines in a vCenter environment.
 
 .DESCRIPTION
 This script enables Change Block Tracking (CBT) for the specified virtual machines in a vCenter environment. CBT tracks disk changes in VMs and is used by backup solutions to determine which disk blocks need to be backed up, improving backup speed and efficiency.
 
-.PARAMETERS
+.EXAMPLE
+Enable-CBT -VirtualMachines "vm1, vm2" -vCenter "vcenter.domain.com" -AdvancedSetting "changeTrackingEnabled" -Value $TRUE
+
+This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "vm1" and "vm2" on vCenter server "vcenter.domain.com".
+
+.EXAMPLE
+Enable-CBT -VirtualMachines vm1, vm2, vm3 -vCenter "myvcenter.domain.com" -AdvancedSetting "changeTrackingEnabled" -Value $TRUE
+
+This example enables CBT for VMs "vm1", "vm2", and "vm3" on vCenter server "myvcenter.domain.com".
+
+.INPUTS
 VirtualMachines:
 The virtual machines to enable CBT for. This parameter accepts an array of virtual machine names.
 
@@ -18,14 +29,6 @@ The advanced setting to configure for the specified virtual machine. Example: "c
 Value:
 The value to set for the advanced setting as either True or False.
 
-.EXAMPLE
-Enable-CBT -VirtualMachines vm1, vm2, vm3 -vCenter "myvcenter.domain.com" -AdvancedSetting "changeTrackingEnabled" -Value $TRUE
-
-This example enables CBT for VMs "vm1", "vm2", and "vm3" on vCenter server "myvcenter.domain.com".
-
-.INPUTS
-An array of virtual machine names.
-
 .OUTPUTS
 None, it enables CBT for the specified virtual machines.
 
@@ -33,10 +36,7 @@ None, it enables CBT for the specified virtual machines.
 Author: Luis Carrillo
 Github: https://github.com/LuisCarrilloTech
 
-.EXAMPLE
-Enable-CBT -VirtualMachines "vm1, vm2" -vCenter "vcenter.domain.com" -AdvancedSetting "changeTrackingEnabled" -Value $TRUE
-
-This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "vm1" and "vm2" on vCenter server "vcenter.domain.com".#>
+#>
 
 
     [CmdletBinding()]
@@ -63,8 +63,7 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
     $moduleName = "VMware.VimAutomation.Core"
     if (!(Get-Module -Name $moduleName)) {
         Import-Module -Name $moduleName -Force
-    }
-    else {
+    } else {
         Write-Output "Loading module. Please wait..."
     }
 
@@ -78,12 +77,10 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
             try {
                 Connect-VIServer -Server $vCenter -Credential $Credential -ErrorAction Stop
                 Write-Host "Connected to vCenter $($vCenter)"
-            }
-            catch [VMware.Vim.VimException] {
+            } catch [VMware.Vim.VimException] {
                 Write-Error "Failed to connect to vCenter. Please verify your credentials and try again."
                 break
-            }
-            catch {
+            } catch {
                 Write-Error "An error occurred. Please try again."
                 break
             }
@@ -96,8 +93,7 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
             # Check if VM exists and get view object:
             $vmview = Get-VM $vm -ErrorAction Stop | Get-View
             $vmConfigSpec = New-Object VMware.Vim.VirtualMachineConfigSpec
-        }
-        catch {
+        } catch {
             Write-Error "Failed to find VM $($vm). Please verify the VM name and try again."
             continue
         }
@@ -105,8 +101,7 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
         # Create snapshot before enabling CBT and set setting:
         try {
             New-Snapshot $vm -Name "Prior to enabling setting $($AdvancedSetting)" -ea Stop
-        }
-        catch {
+        } catch {
             Write-Error "Failed to create snapshot for $($vm). Please verify try again."
             continue
         }
@@ -125,8 +120,7 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
             try {
                 Get-Snapshot -VM $vm -Name "Prior to enabling setting $($AdvancedSetting)" | Remove-Snapshot -Confirm:$false -ErrorAction Stop
                 Write-Host "Snapshot removed."
-            }
-            catch {
+            } catch {
                 Write-Error "Failed to remove snapshot. Please check if the snapshot exists and try again."
                 continue
             }
@@ -138,8 +132,7 @@ This example sets the advanced setting "changeTrackingEnabled" to $TRUE on VMs "
     if ($Disconnect) {
         $global:DefaultVIServers | Disconnect-VIServer -Force -Confirm:$false
         Write-Host "Disconnected from vCenter $($vCenter)."
-    }
-    else {
+    } else {
         Write-Error "Failed to disconnect from vCenter $($vCenter)."
     }
 }
