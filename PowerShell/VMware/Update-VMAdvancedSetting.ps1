@@ -16,6 +16,11 @@ Enable-CBT -VirtualMachines vm1, vm2, vm3 -vCenter "myvcenter.domain.com" -Advan
 
 This example enables CBT for VMs "vm1", "vm2", and "vm3" on vCenter server "myvcenter.domain.com".
 
+.EXAMPLE
+Enable-CBT -VirtualMachines vm1, vm2, vm3 -vCenter "myvcenter.domain.com" -AdvancedSetting "changeTrackingEnabled" -Value $TRUE -Disconnect
+
+This example enables CBT for VMs "vm1", "vm2", and "vm3" on vCenter server "myvcenter.domain.com" and Disconnects from vCenter(s) by using the -Disconnect switch parameter.
+
 .INPUTS
 VirtualMachines:
 The virtual machines to enable CBT for. This parameter accepts an array of virtual machine names.
