@@ -1,37 +1,38 @@
-Function Remove-RemoteLocalGroupMembers {
+function Add-RemoteLocalGroupMembers {
     <#
 .SYNOPSIS
-Remove-RemoteLocalGroupMembers
-This PowerShell function removes members from a local group on remote servers.
+    Gathers disk information from system.
 .DESCRIPTION
-Remove-RemoteLocalGroupMembers -computername <String[]> -LocalGroup <String[]> -Members <String[]> [-Credential]
-
-The Remove-RemoteLocalGroupMembers function removes specified members from the specified local groups on the specified remote servers. It uses PowerShell remoting to execute the necessary commands on the remote servers.
+Add-RemoteLocalGroupMembers -computername <String[]> -LocalGroup <String[]> -Members <String[]> [-Credential]
+The Add-RemoteLocalGroupMembers function is a PowerShell cmdlet that allows you to add members to a local group on remote computers. It provides the flexibility to specify multiple remote servers, local group names, and members to be added.
 .EXAMPLE
-Remove members from a local group on remote servers
-$computername = "Server01", "Server02"
-$localGroup = "Administrators"
-$members = "User01", "User02"
+Add-RemoteLocalGroupMembers -computername "Server1", "Server2" -LocalGroup "Administrators" -Members "User1", "User2"
+This command will add "User1" and "User2" as members of the "Administrators" local group on "Server1" and "Server2" remote servers.
 
-Remove-RemoteLocalGroupMembers -computername $computername -LocalGroup $localGroup -Members $members
 .EXAMPLE
-Remove members from a local group on remote servers with different credentials
-$computername = "Server03", "Server04"
-$localGroup = "Power Users"
-$members = "User03", "User04"
-$credential = Get-Credential
+Add-RemoteLocalGroupMembers -computername "Server3" -LocalGroup "Power Users" -Members "User3" -Credential
+This command will add "User3" as a member of the "Power Users" local group on "Server3" remote server using the provided credentials.
 
-Remove-RemoteLocalGroupMembers -computername
+.EXAMPLE
+Add-RemoteLocalGroupMembers -computername "Server4" -LocalGroup "Users", "Backup Operators" -Members "User4", "User5"
+This command will add "User4" and "User5" as members of the "Users" and "Backup Operators" local groups on "Server4" remote server.
 .PARAMETER computername
--computername <String[]>: Specifies the names of the remote servers from which to remove the local group members.
+-computername (mandatory): Specifies the list of remote servers to which the members will be added to the local group. Multiple server names can be provided.
+
 .PARAMETER LocalGroup
--LocalGroup <String[]>: Specifies the names of the local groups from which to remove the members.
+-LocalGroup (mandatory): Specifies the name of the local group to which the members will be added. Multiple group names can be provided.
+
 .PARAMETER Members
--Members <String[]>: Specifies the names of the members to remove from the local groups.
+-Members (mandatory): Specifies the list of members to be added to the local group. Multiple member names can be provided.
+
 .PARAMETER Credential
--Credential: Optional. Indicates that a credential is required to connect to the remote servers. If not provided, the function will run with the current user's credentials.
+-Credential (optional): Used to pass credentials for authentication when accessing remote servers. If not provided, it will use the current user's credentials.
+
 .NOTES
 PrincipalSource is supported only by Windows 10, Windows Server 2016, and later versions of the Windows operating system. For earlier versions, the property is blank.
+
+The Add-RemoteLocalGroupMembers function requires administrative privileges on the remote computers to modify local groups.
+If the -Credential parameter is provided, the function will prompt for username and password credentials.
 
 Author: Luis Carrillo
 GitHub: https://www.github.com/LuisCarrilloTech
@@ -69,11 +70,12 @@ GitHub: https://www.github.com/LuisCarrilloTech
                         $localgroup = Get-LocalGroup -Name $using:LocalGroup
                         $members = $using:Members
 
-                        Remove-LocalGroupMember -Group $localgroup -Member $members
+                        Add-LocalGroupMember -Group $localgroup -Member $members
                     } -ErrorAction Stop
 
                 } catch {
-                    Write-Output "Error modifying local group for system: $($server)"
+                    Write-Output "Error modifying local group for system: $($server) using $($Credential)"
+                    Write-Output $_.Exception.Message
                 }
 
                 try {
@@ -84,7 +86,8 @@ GitHub: https://www.github.com/LuisCarrilloTech
                     } -ErrorAction Stop
 
                 } catch {
-                    Write-Output "$($Credential) - Error gathering local group info for system: $($server)"
+                    Write-Output "Error gathering local group info for system: $($server) using $($Credential)"
+                    Write-Output $_.Exception.Message
 
                 }
             }
@@ -96,21 +99,24 @@ GitHub: https://www.github.com/LuisCarrilloTech
                         $localgroup = Get-LocalGroup -Name $using:LocalGroup
                         $members = $using:Members
 
-                        Remove-LocalGroupMember -Group $localgroup -Member $members
+                        Add-LocalGroupMember -Group $localgroup -Member $members
                     } -ErrorAction Stop
 
                 } catch {
                     Write-Output "Error modifying local group for system: $($server)"
+                    Write-Output $_.Exception.Message
                 }
 
                 try {
                     Invoke-Command -ComputerName $server -ScriptBlock {
                         $localgroup = Get-LocalGroup -Name $using:LocalGroup
+
                         Get-LocalGroupMember -Group $localgroup
                     } -ErrorAction Stop
 
                 } catch {
                     Write-Output "Error gathering local group info for system: $($server)"
+                    Write-Output $_.Exception.Message
 
                 }
             }

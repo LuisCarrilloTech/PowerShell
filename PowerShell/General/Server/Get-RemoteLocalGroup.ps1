@@ -49,7 +49,8 @@ GitHub: https://www.github.com/LuisCarrilloTech
                         Get-LocalGroup | Sort-Object
                     } -ErrorAction Stop
                 } catch {
-                    Write-Output "$($Credential) - Error gathering local group info for system: $($server)"
+                    Write-Output "Error gathering local group info for system: $($server) using $($Credential)"
+                    Write-Output $_.Exception.Message
                 }
             }
 
@@ -62,6 +63,7 @@ GitHub: https://www.github.com/LuisCarrilloTech
                     } -ErrorAction Stop
                 } catch {
                     Write-Output "Error gathering local group info for system: $($server)"
+                    Write-Output $_.Exception.Message
                 }
             }
         }

@@ -62,9 +62,11 @@ GitHub: https://www.github.com/LuisCarrilloTech
                     } -ErrorAction Stop
 
                     Write-Output $results | Select-Object Name, ObjectClass, SID
+                    Write-Output $_.Exception.Message
 
                 } catch {
-                    Write-Output "($Credential) - Error gathering local group info for system: $($server)"
+                    Write-Output "Error gathering local group info for system: $($server) using $($Credential)"
+                    Write-Output $_.Exception.Message
 
                 }
             }
@@ -80,9 +82,11 @@ GitHub: https://www.github.com/LuisCarrilloTech
                     } -ErrorAction Stop
 
                     Write-Output $results | Select-Object Name, ObjectClass, SID
+                    Write-Output $_.Exception.Message
 
                 } catch {
                     Write-Output "Error gathering local group info for system: $($server)"
+                    Write-Output $_.Exception.Message
 
                 }
             }

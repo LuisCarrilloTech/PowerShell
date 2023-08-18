@@ -1,4 +1,4 @@
-function Get-DiskInfo {
+﻿function Get-DiskInfo {
    <#
     .SYNOPSIS
         Gathers disk information from system.
