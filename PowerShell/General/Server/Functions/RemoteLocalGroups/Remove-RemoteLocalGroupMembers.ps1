@@ -32,7 +32,7 @@ Remove-RemoteLocalGroupMembers -computername
 -Credential: Optional. Indicates that a credential is required to connect to the remote servers. If not provided, the function will run with the current user's credentials.
 .NOTES
 PrincipalSource is supported only by Windows 10, Windows Server 2016, and later versions of the Windows operating system. For earlier versions, the property is blank.
-
+.LINK
 Author: Luis Carrillo
 GitHub: https://www.github.com/LuisCarrilloTech
 #>

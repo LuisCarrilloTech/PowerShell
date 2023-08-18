@@ -34,6 +34,7 @@ PrincipalSource is supported only by Windows 10, Windows Server 2016, and later 
 The Add-RemoteLocalGroupMembers function requires administrative privileges on the remote computers to modify local groups.
 If the -Credential parameter is provided, the function will prompt for username and password credentials.
 
+.LINK
 Author: Luis Carrillo
 GitHub: https://www.github.com/LuisCarrilloTech
 #>

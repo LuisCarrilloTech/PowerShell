@@ -28,6 +28,7 @@ If the credential parameter is not specified, the function will attempt to acces
 
 If an error occurs while retrieving local group information, the function will output an error message.
 
+.LINK
 Author: Luis Carrillo
 GitHub: https://www.github.com/LuisCarrilloTech
 #>
