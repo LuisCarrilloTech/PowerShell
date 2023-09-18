@@ -14,5 +14,4 @@ Update-Module -Name RemoteGroup, RemoteLocalGroups, SysAdmin-Extras, VMwareAdmin
 
 - [Luis Carrillo PowerShell Gallery Modules](https://www.powershellgallery.com/profiles/LuisCarrillo)<sup>[1]</sup>
 
-
-Luis Carrillo :v:
+:v:
